@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="keywords" content="HTML,CSS,JavaScript">
+    <title>увернись от сосульки</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <main>
+        <section>
+            <div class="zag">
+                <h1>УВЕРНИСЬ ОТ СОСУЛЬКИ</h1>
+            </div>
+            <div class="grid">
+                <div class="nav">
+                    <p>НАВИГАЦИЯ:</p>
+                    <p>Q= вверх</p>
+                    <p>W= вниз</p>
+                    <p>МУЗЫКА:</p>
+                    <p>Q= вверх</p>
+                    <p>W= вниз</p>
+                </div>
+                <div class="can"><canvas id="canvas"></canvas></div>
+
+            </div>
+            </div>
+
+            <br><br>
+            <div class="bt">
+                <button onclick="startGame()">НАЧАТЬ</button>
+                <br><br>
+                <button onclick="restartGame()">ЗАНОВО</button>
+        </section>
+    </main>
+    <script>
+
+        //объявляю прептствия, фон, счет, игровое поле
+        var gamePiece;
+        var prep = [];
+        var score;
+        var background1;
+        var background2;
+        var counter = 0;
+
+        //установка бэка, дм
+        function startGame() {
+            var player = document.createElement('img');
+            player.src = "img/snowman.png";
+            gamePiece = new component(player, 10, 120, 50, 50);
+            score = new score();
+
+            var background = document.createElement('img');
+            background.src = "img/back.jpg"
+            background1 = new component(background, 0, 0, 700, 350);
+            background2 = new component(background, 700, 0, 700, 350);
+            gameArea.start();
+        }
+
+        //вывод счета
+        function score() {
+            this.update = function () {
+                ctx = gameArea.context;
+                ctx.font = "20px Georgia";
+                ctx.fillStyle = "white";
+                ctx.fillText("Score: " + counter++, 590, 20);
+            }
+        }
+
+        //основные игровые функции, игровая зона
+        var gameArea =
+        {
+            canvas: document.getElementById("canvas"),
+            //выбираю размер  gamearea и кадр
+            start: function () {
+                this.canvas.width = 700;
+                this.canvas.height = 350;
+                this.context = this.canvas.getContext("2d");
+                this.canvas.style.border = "black solid 1px";
+                this.frameNo = 0;
+                //время по которому двигается дм, чем меньше, тем быстрее
+                this.interval = setInterval(updateGameArea, 30);
+                //прослушка клавиш
+                window.addEventListener('keydown', function (e) {
+                    gameArea.key = e.keyCode;
+                })
+                window.addEventListener('keyup', function (e) {
+                    gameArea.key = false;
+                })
+            },
+            //иллюзия потсоянного движения для смены кадров
+            clear: function () {
+                this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+            }
+        }
+
+        //каждые 25 кадров определяет куда ставить новое препятсвие
+        function everyinterval(n) {
+            if ((gameArea.frameNo / n) % 1 == 0) { return true; }
+            return false;
+        }
+
+        //создание игроков,поля,фона
+        function component(img, x, y, width, height) {
+            this.img = img;
+            this.x = x;
+            this.y = y;
+            this.width = width;
+            this.height = height;
+            //при обновлении рисует изображения в тек положениях
+            this.update = function () {
+                ctx = gameArea.context;
+                ctx.drawImage(this.img, this.x, this.y, this.width, this.height);
+            }
+            this.speedY = 0;
+            this.newPos = function () {
+                this.y += this.speedY;
+            }
+            //проверка на сброс положерия фона
+            this.check = function () {
+                if (this.x < (-700)) {
+                    this.x = 699;
+                }
+            }
+
+            //чел сталкивается с препятствием и он проверяет на какой позиции
+            this.crashWith = function (prep) {
+                var characterLeft = this.x;
+                var characterRight = this.x + (this.width);
+                var characterTop = this.y;
+                var characterBottom = this.y + (this.height);
+                var prepLeft = prep.x;
+                var prepRight = prep.x + (prep.width);
+                var prepTop = prep.y;
+                var prepBottom = prep.y + (prep.height);
+                var crash = true;
+                //если дм сталкивается с препятствием возвр тру
+                if ((characterBottom < prepTop) || (characterTop > prepBottom) || (characterRight < prepLeft) || (characterLeft > prepRight)) {
+                    crash = false;
+                }
+                return crash;
+            }
+        }
+
+        //помогает обновлять каждый раз холст
+        function updateGameArea() {
+            var x, y;
+
+            //если врезаются, то обновление фон прекращается
+            for (i = 0; i < prep.length; i += 1) {
+                if (gamePiece.crashWith(prep[i])) {
+                    return;
+                }
+            }
+            //коллизия, после проверки игровая область сбрасывается и очищается
+            gameArea.clear();
+
+            //проверка на нужно ли сбросить фон, пермещает фон в новое положение каждый кадр
+            background1.x += -1;
+            background1.newPos();
+            background1.update();
+            background1.check();
+
+            background2.x += -1;
+            background2.newPos();
+            background2.update();
+            background2.check();
+            gameArea.frameNo += 1;//увелечени кадра инкремент
+
+            ///изображения в массиве, меняются каждые 25 кадров
+            if (gameArea.frameNo == 1 || everyinterval(25)) {
+                x = gameArea.canvas.width;
+                minHeight = 0;
+                maxHeight = 330;
+                //рандомная позиция нпс на игровом поле
+                height = Math.floor(Math.random() * (maxHeight - minHeight + 1) + minHeight);
+                var npc = document.createElement('img');
+                npc.src = "img/ice.png"
+                prep.push(new component(npc, 700, height, 50, 50));//высота ширина нпс
+
+                //удаляет нпс когда они уходят из поля зрения
+                if (gameArea.frameNo > 200 && everyinterval(100)) {
+                    prep.shift();
+                }
+            }
+
+            //движение по x
+            for (i = 0; i < prep.length; i += 1) {
+                prep[i].x += -8;
+                prep[i].update();
+            }
+
+            //по y по нажатию клавиш
+            gamePiece.speedY = 0;
+            if (gameArea.key && gameArea.key == 81) //q
+            {
+                if (gamePiece.y > 0) {
+                    gamePiece.speedY = -5;
+                }
+            }
+            if (gameArea.key && gameArea.key == 87) //w
+            {
+                if (gamePiece.y < 300) {
+                    gamePiece.speedY = 5;
+                }
+            }
+
+            //обновляет положение игровой фигуры и счет перед очисткой
+            gamePiece.newPos();
+            gamePiece.update();
+            score.update();
+        }
+
+        //сброс препятсвий, счетчика и кадров
+        function restartGame() {
+            counter = 0
+            prep = [];
+            gameArea.frameNo = 0;
+            startGame();
+        }
+    </script>
+</body>
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@font-face {
+	font-family: 'minecraft.ttf'; 
+	src: url(font/minecraft.ttf); 
+}
+body{
+    background-color: #1f2849;
+}
+p{
+    font-family: "minecraft.ttf";
+    font-size: 20px; 
+    color:white;
+}
+h1{
+
+    font-family: "minecraft.ttf";
+    font-size: 40px; 
+    color:white;
+    text-align: center;
+}
+button 
+{
+    font-family: "minecraft.ttf";
+    width:100px;
+    height:40px;
+    font-size: 13px; 
+    color:white;
+    background-color: #1f2849;
+    border:none;
+    border-radius: 20px;
+}
+
+.nav
+{   
+    margin-left:25px;
+    padding-left:25px;
+    padding-left:25px;
+    width:200px;
+    border-radius: 20px;
+    border: solid 1px white;
+}
+.bt
+{   
+    padding-left:80px;
+    width:200px;
+    color:white;
+    
+}
+main{
+    margin-left:15px;
+    margin-right:15px;
+    width:1020px;
+    height:800px;
+    background-color: #6d7abd;
+    border-radius:20px ;
+}
+.grid{
+    display:grid;
+    grid-template-columns: auto 1fr;
+    gap:25px;
+}
+@media (max-width: 1920px) 
+{
+    main
+    {
+        display:flex;
+        margin:auto;
+    }
+  .zag
+    {
+        text-align: center;
+        margin:auto;
+        width: 100%;
+    }
+ }
+ @media  (min-width:768px) 
+{
+    main
+    {
+        display:flex;
+        margin:auto;
+    }
+  .zag
+    {
+        text-align: center;
+        margin:auto;
+        width: 100%;
+    }
+ }
+ @media  (max-width: 480px) 
+ {
+     main
+     {
+         display:flex;
+         margin:auto;
+     }
+   .zag
+     {
+         text-align: center;
+         margin:auto;
+         width: 100%;
+     }
+  }
+
